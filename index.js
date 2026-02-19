@@ -180,6 +180,100 @@ program
   });
 
 program
+  .command('search-interactions <query>')
+  .description('Search for interactions')
+  .action(async (query) => {
+    try {
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'searchInteractions',
+        arguments: { query }
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('stats <query>')
+  .description('Get aggregate statistics (e.g. "how many people at Google")')
+  .action(async (query) => {
+    try {
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'aggregateContacts',
+        arguments: { query }
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('get-notes')
+  .description('Get notes by date range')
+  .requiredOption('--start <date>', 'Start date (e.g. "now-7d")')
+  .requiredOption('--end <date>', 'End date (e.g. "now")')
+  .action(async (options) => {
+    try {
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'getNotes',
+        arguments: { start: options.start, end: options.end }
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('get-events')
+  .description('Get calendar events by date range')
+  .requiredOption('--start <date>', 'Start date (e.g. "now-7d")')
+  .requiredOption('--end <date>', 'End date (e.g. "now")')
+  .action(async (options) => {
+    try {
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'getEvents',
+        arguments: { start: options.start, end: options.end }
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('group-members <group_name>')
+  .description('List members of a group (using search)')
+  .action(async (groupName) => {
+    try {
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'searchContacts',
+        arguments: { query: `people in group "${groupName}"` }
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
   .command('list-tools')
   .description('List available tools')
   .action(async () => {
