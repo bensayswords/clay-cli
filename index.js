@@ -71,6 +71,115 @@ program
   });
 
 program
+  .command('note <id> <content>')
+  .description('Add a note to a contact')
+  .action(async (id, content) => {
+    try {
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'createNote',
+        arguments: { contact_id: parseInt(id), content }
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('group-list')
+  .description('List all groups')
+  .action(async () => {
+    try {
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'getGroups',
+        arguments: {}
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('group-create <title>')
+  .description('Create a new group')
+  .action(async (title) => {
+    try {
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'createGroup',
+        arguments: { title }
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('group-update <id>')
+  .description('Update group (add/remove members)')
+  .option('--title <title>', 'New title')
+  .option('--add <ids>', 'Comma-separated contact IDs to add')
+  .option('--remove <ids>', 'Comma-separated contact IDs to remove')
+  .action(async (id, options) => {
+    try {
+      const args = { group_id: parseInt(id) };
+      if (options.title) args.title = options.title;
+      if (options.add) args.add_contact_ids = options.add.split(',').map(i => parseInt(i.trim()));
+      if (options.remove) args.remove_contact_ids = options.remove.split(',').map(i => parseInt(i.trim()));
+
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'updateGroup',
+        arguments: args
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('create-contact')
+  .description('Create a new contact')
+  .requiredOption('--email <email>', 'Email address')
+  .option('--name <name>', 'Full name')
+  .option('--linkedin <handle>', 'LinkedIn handle')
+  .action(async (options) => {
+    try {
+      const args = { email: [options.email] };
+      if (options.name) {
+        const parts = options.name.split(' ');
+        args.first_name = parts[0];
+        args.last_name = parts.slice(1).join(' ');
+      }
+      if (options.linkedin) args.linkedin = options.linkedin;
+
+      const client = await getClient();
+      const result = await client.callTool({
+        name: 'createContact',
+        arguments: args
+      });
+      console.log(JSON.stringify(result.content, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(chalk.red('Error:', error.message));
+      process.exit(1);
+    }
+  });
+
+program
   .command('list-tools')
   .description('List available tools')
   .action(async () => {
