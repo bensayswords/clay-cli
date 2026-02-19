@@ -32,18 +32,45 @@ async function getClient() {
   return client;
 }
 
+function formatContacts(content) {
+  if (typeof content === 'string') {
+    try {
+      content = JSON.parse(content);
+    } catch (e) {
+      return content;
+    }
+  }
+
+  if (!Array.isArray(content)) return JSON.stringify(content, null, 2);
+
+  return content.map(c => {
+    const name = chalk.bold.blue(c.name || 'Unknown');
+    const title = chalk.yellow(c.headline || c.extra?.title || 'No title');
+    const bio = c.bio ? chalk.gray(`\n${c.bio.substring(0, 150)}${c.bio.length > 150 ? '...' : ''}`) : '';
+    const id = chalk.dim(`(ID: ${c.id})`);
+    
+    return `${name} - ${title} ${id}${bio}\n${chalk.dim('─'.repeat(50))}`;
+  }).join('\n');
+}
+
 program
   .command('search <query>')
   .description('Search for contacts')
-  .action(async (query) => {
+  .option('--json', 'Output raw JSON')
+  .action(async (query, options) => {
     try {
       const client = await getClient();
       const result = await client.callTool({
         name: 'searchContacts',
-        arguments: { query }
+        arguments: { query, job_title: [], company_name: [], location: [], keywords: [], limit: 10 }
       });
       
-      console.log(JSON.stringify(result.content, null, 2));
+      if (options.json) {
+        console.log(JSON.stringify(result.content, null, 2));
+      } else {
+        const contacts = JSON.parse(result.content[0].text);
+        console.log(formatContacts(contacts));
+      }
       process.exit(0);
     } catch (error) {
       console.error(chalk.red('Error:', error.message));
@@ -54,15 +81,25 @@ program
 program
   .command('get <id>')
   .description('Get contact details')
-  .action(async (id) => {
+  .option('--json', 'Output raw JSON')
+  .action(async (id, options) => {
     try {
       const client = await getClient();
       const result = await client.callTool({
         name: 'getContact',
-        arguments: { id }
+        arguments: { contact_id: parseInt(id) }
       });
       
-      console.log(JSON.stringify(result.content, null, 2));
+      if (options.json) {
+        console.log(JSON.stringify(result.content, null, 2));
+      } else {
+        const contact = JSON.parse(result.content[0].text);
+        console.log(formatContacts([contact]));
+        if (contact.notes && contact.notes.length > 0) {
+          console.log(chalk.bold('\nNotes:'));
+          contact.notes.forEach(n => console.log(chalk.gray(`- ${n}`)));
+        }
+      }
       process.exit(0);
     } catch (error) {
       console.error(chalk.red('Error:', error.message));
@@ -258,14 +295,24 @@ program
 program
   .command('group-members <group_name>')
   .description('List members of a group (using search)')
-  .action(async (groupName) => {
+  .option('--json', 'Output raw JSON')
+  .action(async (groupName, options) => {
     try {
       const client = await getClient();
       const result = await client.callTool({
         name: 'searchContacts',
-        arguments: { query: `people in group "${groupName}"` }
+        arguments: { 
+          query: `people in group "${groupName}"`,
+          job_title: [], company_name: [], location: [], keywords: [], limit: 50
+        }
       });
-      console.log(JSON.stringify(result.content, null, 2));
+      
+      if (options.json) {
+        console.log(JSON.stringify(result.content, null, 2));
+      } else {
+        const contacts = JSON.parse(result.content[0].text);
+        console.log(formatContacts(contacts));
+      }
       process.exit(0);
     } catch (error) {
       console.error(chalk.red('Error:', error.message));
